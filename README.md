@@ -1,0 +1,413 @@
+<div align="center">
+
+#  Assignment 2: 手写体分类任务
+
+[![Python](https://img.shields.io/badge/Python-3.8-blue.svg)](https://www.python.org/)
+[![Deadline](https://img.shields.io/badge/Deadline-Nov%2017-red.svg)](http://101.132.193.95:3000)
+[![License](https://img.shields.io/badge/License-Educational-green.svg)](LICENSE)
+
+**📅 截止日期：11月17日0:00** | **🏆 [查看排行榜](http://101.132.193.95:3000)**
+
+
+---
+
+</div>
+
+## 📋 任务概述
+
+> 本次任务是一个手写数字分类任务，要求在 train.npz 训练数据上，基于 Kernel + SVM 实现一个手写体识别模型，模型输入为 28×28像素的灰度手写数字图片，输出为 0~9 共10类数字标签。请实现 SVM 的核心算法逻辑，通过合理的特征工程与参数选择提升模型性能。
+
+### 🎓 作业要求
+
+```
+✨ 1. 独立实现 Kernel + SVM 分类模型对手写数字图片进行分类，对比多项式核和高斯核效果。
+✨ 2. 根据混淆矩阵，分析当前SVM算法瓶颈。
+✨ 3. 独立实现机器学习模型的核心算法逻辑，不得调用任何外部机器学习库。
+```
+
+
+<details>
+<summary>❌ 禁止使用的库</summary>
+
+- sklearn / scikit-learn
+- tensorflow
+- torch / pytorch
+- keras
+- xgboost
+- lightgbm
+- catboost
+- statsmodels
+- libsvm
+- liblinear
+- shotgun
+- thundersvm
+- cuml
+
+</details>
+
+---
+
+## 📊 数据说明
+
+
+
+### 📂 数据集
+
+- **训练集**: `data/train.npz`
+
+### 📌 数据格式
+
+#### 训练集
+
+- `train.npz` 文件包含两个数组：`X_train` 和 `y_train`
+- `X_train`：6800张28×28像素的灰度手写数字图片
+- `y_train`：图片对应的数字标签，取值范围为 0~9
+---
+### 🎨 数据示例
+
+
+
+下面是一个手写数字"3"的28×28像素灰度图像示例：
+
+<div align="center">
+
+**手写数字"3"的像素灰度图**
+
+<img src="sample/image.png" alt="手写数字3" width="100"/>
+</div>
+
+#### 对应的数值矩阵
+```python
+array([0.78 0.   0.64 0.   0.   0.42 0.   0.57 0.29 0.   0.   0.   0.   0.74
+  0.   0.08 1.   0.   0.   0.07 0.   0.   0.13 0.27 0.   0.   0.   0.  ]
+ [0.32 0.   0.   1.   0.   0.   0.25 0.28 0.6  0.   0.   0.   0.   0.61
+  0.01 0.78 0.11 0.   0.11 0.   0.   0.   0.   0.   0.05 0.   0.1  1.  ]
+ [0.   1.   0.81 0.61 0.   0.   0.   0.   0.   0.   0.   1.   1.   1.
+  0.77 0.39 0.88 0.71 0.12 0.84 0.05 1.   0.   0.67 0.   0.   0.22 0.02]
+ [0.75 0.   0.   0.   0.83 0.   0.26 0.   0.29 0.92 1.   1.   1.   1.
+  1.   0.26 0.   0.   0.75 0.52 0.67 0.   0.06 0.   0.67 0.11 0.   0.09]
+ [0.4  0.   1.   0.   0.   0.84 0.   0.04 0.73 0.   0.42 1.   0.38 0.21
+  0.   0.31 0.   0.11 0.08 0.58 0.   0.78 0.03 0.22 0.22 0.   0.   0.  ]
+ [0.   0.84 0.94 0.   0.   0.   0.46 0.52 0.   1.   1.   0.65 1.   1.
+  0.57 1.   0.   0.74 0.37 0.87 0.   0.   1.   0.3  0.57 0.46 0.73 0.  ]
+ [0.05 0.37 0.58 0.38 0.14 1.   0.   0.35 0.   1.   0.77 1.   0.99 0.89
+  0.36 1.   0.   0.   0.13 0.   0.08 1.   0.   0.72 0.31 0.   0.   0.24]
+ [0.13 0.06 0.   0.63 0.   0.   0.4  0.42 1.   1.   0.26 0.26 0.62 1.
+  0.26 0.88 0.   0.17 1.   0.   0.17 0.43 0.93 0.67 0.   0.53 0.   0.  ]
+ [0.   0.03 0.   0.32 0.   1.   0.09 1.   0.   0.25 0.   0.15 1.   0.18
+  0.5  0.69 0.56 1.   1.   0.98 0.54 0.   0.46 0.   0.   0.95 0.   0.56]
+ [0.   0.   0.   0.26 0.   0.22 0.02 0.7  1.   0.22 0.   1.   0.51 1.
+  1.   1.   0.37 0.   1.   1.   0.72 0.64 0.42 0.   0.   0.   1.   1.  ]
+ [0.   0.   0.   0.   0.31 0.49 0.28 0.   0.   0.   0.47 1.   0.96 0.19
+  1.   0.34 0.42 0.03 0.08 0.46 1.   0.48 0.23 0.   0.   0.96 0.51 0.  ]
+ [0.1  0.69 0.   0.   0.03 0.26 0.2  0.34 0.   0.91 1.   1.   1.   0.72
+  0.11 0.5  0.   0.   0.61 0.78 0.83 1.   0.2  0.   0.2  0.   0.   0.77]
+ [0.93 0.61 0.   0.   0.   0.   0.   0.11 0.46 0.   1.   0.41 1.   1.
+  0.41 0.11 0.   0.   0.   0.   0.68 1.   0.   0.   0.   1.   0.   0.05]
+ [0.57 0.   0.08 0.79 0.   1.   0.06 0.56 0.   1.   0.82 1.   1.   0.67
+  0.09 0.62 0.   0.68 0.   0.   0.82 1.   0.   0.45 0.   0.   0.8  0.76]
+ [0.   0.   0.   0.   0.19 0.25 0.   0.   0.23 0.   0.17 1.   1.   0.
+  0.68 0.   0.29 1.   1.   0.   0.55 1.   0.17 0.22 0.   0.05 0.   0.  ]
+ [0.28 0.   0.   1.   0.   0.   0.57 1.   0.   1.   1.   1.   0.49 0.24
+  0.   0.   0.   1.   0.21 0.   0.   1.   0.34 0.19 0.26 0.   0.   0.27]
+ [0.12 0.24 0.   0.   0.   0.04 0.   0.   0.19 0.89 0.81 0.   0.34 0.
+  0.   0.   0.   0.   0.06 0.79 0.83 1.   0.   0.53 0.   0.9  0.42 0.  ]
+ [0.28 0.   0.   0.   1.   0.   0.   0.   0.   0.   0.41 0.46 0.   0.
+  0.   0.66 0.   1.   0.72 1.   1.   0.84 0.71 0.28 0.   0.   0.   0.27]
+ [0.38 0.26 0.19 0.33 0.22 0.03 0.   0.   1.   0.   0.   0.   0.   0.
+  0.   0.   0.   0.   0.09 1.   1.   0.86 0.1  0.   0.78 0.27 0.37 0.  ]
+ [0.   0.83 0.   1.   0.   0.   0.21 0.32 0.   0.   1.   0.   0.14 0.2
+  0.   0.71 0.49 0.26 0.23 1.   0.74 1.   0.   0.04 0.   0.31 0.   0.  ]
+ [1.   0.22 1.   1.   0.25 1.   0.   0.18 0.21 0.76 0.1  1.   0.   0.95
+  0.   0.   0.93 0.6  1.   0.52 0.   0.   0.07 0.   0.   0.   0.   0.01]
+ [0.34 0.   0.4  0.69 0.   0.1  0.   0.89 0.   0.49 0.   0.   0.   0.
+  0.03 0.33 0.69 0.84 1.   0.92 0.   0.   0.   0.   0.   0.   0.97 0.69]
+ [0.   0.   1.   0.   0.   0.16 0.39 0.34 0.14 0.   0.   0.   0.59 0.08
+  0.02 1.   0.01 0.99 0.89 0.87 0.12 0.   0.   1.   1.   0.97 0.   1.  ]
+ [0.   0.   1.   0.   0.63 0.   0.   0.   0.38 0.75 0.62 0.   0.31 0.8
+  0.   0.   0.   1.   0.   0.   0.   0.36 0.   0.9  0.41 0.14 0.03 0.  ]
+ [0.   0.   0.76 0.   0.   0.   0.   0.   0.   0.14 0.75 0.9  0.56 0.79
+  1.   1.   1.   0.   0.   0.   0.   0.08 0.   0.   0.17 0.79 0.   0.  ]
+ [0.   0.   0.   1.   0.   0.   0.   0.25 0.   0.   0.42 1.   0.25 0.25
+  1.   1.   0.   0.34 0.   0.   0.   0.47 0.   0.   0.66 1.   0.63 0.88]
+ [0.   0.78 0.   1.   0.   0.13 0.   0.   0.19 0.   0.12 0.46 0.   0.17
+  0.   0.   0.   0.21 0.   0.   0.   0.03 0.   0.12 0.76 0.51 0.91 0.87]
+ [0.28 0.66 0.   0.   0.   0.   0.   0.   0.   0.   0.59 0.   1.   0.
+  0.   0.53 0.53 0.   0.31 0.   0.75 0.68 0.55 0.45 0.   0.04 0.   0.  ])
+```
+
+### 🔍 数据特征说明
+
+| 特征 | 说明 |
+|------|------|
+| **图像尺寸** | 28×28像素 |
+| **颜色空间** | 灰度（0-1浮点数） |
+| **数据范围** | 0.0（白色）到 1.0（黑色） |
+| **样本数量** | 6800个训练样本 |
+| **类别数量** | 10个数字（0-9） |
+
+### 💡 数据预处理提示
+
+
+## 📈 评测指标和评分方式
+
+### 评测指标
+
+- **Accuracy**：分类准确率
+- **Confusion Matrix**：混淆矩阵（展示各类预测混淆情况）
+- **Prediction_Time**：预测时间（秒）
+
+> ⚡ 评测使用 **10个并发线程** 对测试集进行预测
+
+> **位次排序逻辑**：Accuracy高 -> 推理时间短 -> 最近提交时间远
+
+
+### 评分方式
+
+#### 总分：20分
+
+🏆 20分 - Metric得分（基于Accuracy值）  
+
+#### 📊 评分规则
+
+采用**线性变换**的方式计算分数：
+
+<table>
+<tr>
+<th>🌟 等级</th>
+<th>📍 标准</th>
+<th>💯 得分</th>
+</tr>
+<tr>
+<td align="center"><b>前10%学生</b></td>
+<td>leaderboard第10%分位的Accuracy</td>
+<td align="center"><b>20分</b><br/>(满分)</td>
+</tr>
+<tr>
+<td align="center"><b>中间学生</b></td>
+<td>在10%分位线和baseline之间</td>
+<td align="center"><b>6-20分</b><br/>(线性插值)</td>
+</tr>
+<tr>
+<td align="center"><b>Baseline</b></td>
+<td>baseline的Accuracy</td>
+<td align="center"><b>6分</b><br/></td>
+</tr>
+<tr>
+<td align="center"><b>未提交</b></td>
+<td>-</td>
+<td align="center"><b>0分</b></td>
+</tr>
+</table>
+
+---
+
+## 📂 项目结构
+
+```
+📦 project/
+ ┣ 📄 data/train.npz         # 训练数据
+ ┣ 🔧 model.py               # 模型实现
+ ┣ 🚀 solution.py            # 推理接口
+ ┣ 📋 requirements.txt       # 依赖库
+ ┣ 🐧 evaluate-linux         # Linux评测程序
+ ┣ 🍎 evaluate-macos         # macOS评测程序
+ ┗ 🪟 evaluate-win.exe       # Windows评测程序
+```
+
+> 💡 **Baseline**: Logistic regression模型,你需要实现自己的SVM模型
+
+---
+
+## 💻 模型实现
+
+### 🎨 1. `model.py` - 模型类
+
+```python
+class Model:
+    def __init__(self):
+        """初始化模型所需参数、变量或结构（如权重、缓存等）"""
+
+
+    def fit(self, X, y):
+        """
+        模型训练函数
+
+        Args:
+            X: numpy数组, shape (n_samples,H,W)
+            y: numpy数组, shape (n_samples,)
+        Returns:
+            None
+        """
+        # 在此处实现模型训练逻辑（可自由设计模型结构与训练方式）
+
+
+    def predict(self, X):
+        """
+        模型预测函数
+
+        Args:
+            X: numpy数组, shape (n_samples, n_features)
+        Returns:
+            numpy数组, shape (n_samples,)
+        """
+        # 在此处实现推理逻辑，返回每个样本的预测类别
+        
+```
+
+### 🚀 2. `solution.py` - 推理接口
+
+```python
+class Solution:
+    def __init__(self):
+        """初始化推理类，加载并训练模型"""
+        self.model = Model()
+        # 可加载训练数据并训练模型
+        # self.model.fit(X_train, y_train)
+
+    def forward(self, sample: np.ndarray) -> dict:
+        """
+        模型推理接口，接收单条样本数据并返回预测结果
+
+        Args:
+            sample: numpy数组, shape (H,W)
+        
+        Returns:
+            dict: {'prediction': int}，预测类别
+        """
+        x = sample.reshape(1, -1)  
+        y_pred = self.model.predict(x)
+        return {"prediction": int(y_pred[0])}
+```
+
+---
+
+## ⚙️ 环境要求
+
+<div align="center">
+
+![Python](https://img.shields.io/badge/Python-3.8-blue?style=for-the-badge&logo=python&logoColor=white)
+![NumPy](https://img.shields.io/badge/NumPy-013243?style=for-the-badge&logo=numpy&logoColor=white)
+![Pandas](https://img.shields.io/badge/Pandas-150458?style=for-the-badge&logo=pandas&logoColor=white)
+
+</div>
+
+**📦 依赖安装**:
+
+```bash
+conda create -n ML python=3.10
+conda activate ML
+pip install -r requirements.txt
+```
+
+---
+
+## 🚀 运行评测
+
+### 📥 1. 下载评测程序
+<details>
+<summary><b>📖 点击查看详细步骤</b></summary>
+
+1. 🔗 进入GitHub仓库
+2. 🏷️ 点击 [release](https://github.com/LZlzLzzlzl/ML-Assignment-2/releases/tag/v1.0.0) 标签
+3. ⬇️ 下载对应系统的文件：
+   - 🐧 **Linux**: [evaluate-linux](https://github.com/LZlzLzzlzl/ML-Assignment-2/releases/tag/v1.0.0/evaluate-linux)
+   - 🍎 **macOS**: [evaluate-macos](https://github.com/LZlzLzzlzl/ML-Assignment-2/releases/tag/v1.0.0/evaluate-macos)
+   - 🪟 **Windows**: [evaluate-win.exe](https://github.com/LZlzLzzlzl/ML-Assignment-2/releases/tag/v1.0.0/evaluate-win.exe)
+
+</details>
+
+> ⚠️ **重要**：将下载的评测程序放在**项目根目录**（与solution.py、model.py同级）
+
+### ⚙️ 2. 设置环境变量
+
+**🐧 Linux/macOS:**
+
+```bash
+export STUDENT_ID='你的学号'
+export STUDENT_NAME='你的姓名'
+export STUDENT_NICKNAME='你的昵称'
+export MAIN_CONTRIBUTOR='human'(or 'ai')
+```
+
+💾 持久化：添加到`~/.bashrc`或`~/.zshrc`
+
+**🪟 Windows:**
+
+```cmd
+set STUDENT_ID=你的学号
+set STUDENT_NAME=你的姓名
+set STUDENT_NICKNAME=你的昵称
+set MAIN_CONTRIBUTOR=human(or ai)
+```
+
+💾 持久化：系统设置 → 环境变量
+
+### ▶️ 3. 运行评测
+
+**🐧 Linux(ubuntu 24.02)**
+
+```bash
+chmod +x evaluate-linux
+./evaluate-linux
+```
+
+**🍎 macOS**
+
+```bash
+chmod +x evaluate-macos
+./evaluate-macos
+```
+
+> ⚠️ macOS 首次运行提示：若系统提示 “无法打开，因为它来自身份不明的开发者”，请按以下步骤操作：
+> 点击弹窗中的 “取消”；
+> 打开系统设置（System Settings） → 进入隐私与安全性（Privacy & Security）；
+> 在页面下方 “安全” 区域找到 “evaluate-macos 已被阻止打开” 的提示，点击右侧 **“仍要打开”**；
+> 在确认窗口中再次点击 “打开”，即可正常运行。
+> 
+**🪟 Windows**
+
+```cmd
+evaluate-win.exe
+```
+
+---
+
+## 🏆 Leaderboard
+
+<div align="center">
+
+### 🌐 访问地址
+
+**🔗 [http://101.132.193.95:3000](http://101.132.193.95:3000)**
+
+---
+
+### ✨ 功能特性
+
+
+<div align="center">
+
+📊 实时排名显示
+
+📈 详细指标展示 
+
+🔄 未提交同学显示
+
+⏰ 支持多次提交,以截止日期前的最佳成绩为准
+
+
+</div>
+
+
+---
+
+### 🎉 祝你取得好成绩！
+
+**📅 记得在11月17日0:00前提交你的最佳成绩！**
+
+---
+
+Made with ❤️ for Machine Learning Education
+
+</div>

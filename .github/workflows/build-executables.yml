@@ -1,0 +1,121 @@
+name: Build evaluate executables (Windows / Linux / macOS)
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch: {}
+
+jobs:
+  build-linux:
+    name: Build (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller numpy requests
+
+      - name: Show python & pip
+        run: |
+          python -V
+          pip -V
+
+      - name: Build evaluate-linux (PyInstaller)
+        run: |
+          # ensure dist cleaned
+          rm -rf build dist
+          python -m PyInstaller --onefile --noconfirm \
+            --add-data "data/test.npz:data" \
+            --name evaluate-linux evaluate.py
+
+      - name: List dist files
+        run: ls -l dist || true
+
+      - name: Upload artifact (linux)
+        uses: actions/upload-artifact@v4
+        with:
+          name: evaluate-linux
+          path: dist/evaluate-linux
+
+  build-windows:
+    name: Build (Windows)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller numpy requests
+
+      - name: Show python & pip
+        run: |
+          python -V
+          pip -V
+
+      - name: Build evaluate-win.exe (PyInstaller)
+        shell: powershell
+        run: |
+          Remove-Item -Recurse -Force build,dist -ErrorAction SilentlyContinue
+          python -m PyInstaller --onefile --noconfirm --add-data "data\test.npz;data" --name evaluate-win evaluate.py
+
+      - name: List dist files
+        run: dir dist
+
+      - name: Upload artifact (windows)
+        uses: actions/upload-artifact@v4
+        with:
+          name: evaluate-win
+          path: dist/evaluate-win.exe
+
+  build-macos:
+    name: Build (macOS)
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller numpy requests
+
+      - name: Show python & pip
+        run: |
+          python -V
+          pip -V
+
+      - name: Build evaluate-macos (PyInstaller)
+        run: |
+          rm -rf build dist
+          python -m PyInstaller --onefile --noconfirm \
+            --add-data "data/test.npz:data" \
+            --name evaluate-macos evaluate.py
+
+      - name: List dist files
+        run: ls -l dist || true
+
+      - name: Upload artifact (macos)
+        uses: actions/upload-artifact@v4
+        with:
+          name: evaluate-macos
+          path: dist/evaluate-macos
