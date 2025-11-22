@@ -1,0 +1,118 @@
+name: Build Linux Executable (Anti-Decompile + Compression)
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'requirements.txt'
+      - '.github/workflows/build.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python 3.8
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.8'
+        cache: 'pip'
+
+    - name: Create evaluate.py from Secret
+      env:
+        EVALUATE_CODE: ${{ secrets.EVALUATE_PY_CODE }}
+      run: |
+        echo "$EVALUATE_CODE" > evaluate.py
+        if [ ! -s evaluate.py ]; then
+          echo "[ERROR] evaluate.py is empty! Check EVALUATE_PY_CODE Secret"
+          exit 1
+        fi
+      shell: bash
+
+    - name: Install PyArmor (Anti-Decompile Tool)
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyarmor==7.7.4
+        pyarmor --version
+      shell: bash
+
+    - name: Encrypt evaluate.py with PyArmor
+      run: |
+        pyarmor obfuscate \
+          --output pyarmor_dist \
+          evaluate.py
+      shell: bash
+
+    - name: Install dependencies
+      run: |
+        pip install pyinstaller==5.13.2
+        pip install -r requirements.txt
+      shell: bash
+
+    - name: Build with PyInstaller (Linux)
+      run: |
+        # 定义路径变量以保持整洁
+        PYTRANSFORM_DIR="pyarmor_dist/pytransform"
+        SO_FILE="$PYTRANSFORM_DIR/_pytransform.so"
+        
+        pyinstaller --onefile \
+                    --name evaluate-linux \
+                    --hidden-import pandas \
+                    --hidden-import numpy \
+                    --hidden-import requests \
+                    --hidden-import xgboost \
+                    --hidden-import sklearn \
+                    --hidden-import shap \
+                    --hidden-import pytransform \
+                    --add-data "$PYTRANSFORM_DIR:pytransform" \
+                    --add-binary "$SO_FILE:." \
+                    --paths "pyarmor_dist" \
+                    pyarmor_dist/evaluate.py
+      shell: bash
+
+    - name: Cleanup all temporary files
+      if: always()
+      run: |
+        rm -f evaluate.py || true
+        rm -rf pyarmor_dist || true
+        rm -rf build || true
+        rm -f evaluate-linux.spec || true
+      shell: bash
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: evaluate-linux
+        path: dist/evaluate-linux
+        retention-days: 7
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    steps:
+    - name: Download artifact
+      uses: actions/download-artifact@v4
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v${{ github.run_number }}
+        name: Release v${{ github.run_number }}
+        draft: false
+        prerelease: false
+        files: evaluate-linux/evaluate-linux
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
