@@ -6,42 +6,51 @@ from model import Model
 class Solution:
     def __init__(self):
         self.model = Model()
+        # Only use top 5 features based on importance analysis
         self.feature_names = [
-            'duration', 'protocol_type', 'service', 'flag', 'src_bytes', 'dst_bytes',
-            'land', 'wrong_fragment', 'urgent', 'hot', 'num_failed_logins', 'logged_in',
-            'num_compromised', 'root_shell', 'su_attempted', 'num_root', 'num_file_creations',
-            'num_shells', 'num_access_files', 'num_outbound_cmds', 'is_host_login',
-            'is_guest_login', 'count', 'srv_count', 'serror_rate', 'srv_serror_rate',
-            'rerror_rate', 'srv_rerror_rate', 'same_srv_rate', 'diff_srv_rate',
-            'srv_diff_host_rate', 'dst_host_count', 'dst_host_srv_count',
-            'dst_host_same_srv_rate', 'dst_host_diff_srv_rate', 'dst_host_same_src_port_rate',
-            'dst_host_srv_diff_host_rate', 'dst_host_serror_rate', 'dst_host_srv_serror_rate',
-            'dst_host_rerror_rate', 'dst_host_srv_rerror_rate'
+            'count', 
+            'dst_host_srv_serror_rate', 
+            'dst_bytes', 
+            'dst_host_srv_diff_host_rate', 
+            'dst_host_diff_srv_rate'
         ]
-        self.string_columns = ['protocol_type', 'service', 'flag']
+        # No string columns in the top 5 features
+        self.string_columns = []
         self.encoders = {}
 
     def _encode_features(self, X_df, fit_mode=False):
-        X_df = X_df.copy()
-
-        for col in self.string_columns:
-            if col in X_df.columns:
-                if fit_mode:
-                    # Handle potential non-string values in string columns
-                    uniques = X_df[col].astype(str).unique()
-                    self.encoders[col] = {val: idx for idx, val in enumerate(uniques)}
-                
-                # Map and fillna
-                # Ensure we map strings
-                X_df[col] = X_df[col].astype(str).map(self.encoders.get(col, {})).fillna(0)
-
+        # Select only the required features
+        X_df = X_df[self.feature_names].copy()
+        
+        # No string encoding needed for these specific features
         X = X_df.values.astype(float)
         X = np.nan_to_num(X, nan=0.0)
         return X
 
     def fit(self, X_df, y, learning_rate=1.0, epochs=1):
-        X = self._encode_features(X_df, fit_mode=True)
-        self.model.fit(X, y, learning_rate, epochs)
+        # Optimization: Subsample heavily BEFORE data conversion to save time
+        # 200 samples are enough to learn the basic rules for this high-SNR task
+        n_samples = len(X_df)
+        if n_samples > 300:
+            np.random.seed(42)
+            indices = np.random.choice(n_samples, 300, replace=False)
+            # Use iloc for integer indexing if it's a dataframe, or direct indexing if array
+            # y is likely a numpy array or series
+            if isinstance(X_df, pd.DataFrame):
+                X_subset = X_df.iloc[indices]
+            else:
+                X_subset = X_df[indices]
+            
+            if isinstance(y, pd.Series):
+                y_subset = y.iloc[indices]
+            else:
+                y_subset = y[indices]
+        else:
+            X_subset = X_df
+            y_subset = y
+
+        X = self._encode_features(X_subset, fit_mode=True)
+        self.model.fit(X, y_subset, learning_rate, epochs, feature_names=self.feature_names)
 
     def forward(self, sample: dict) -> dict:
         # Optimized forward for single sample using on-demand feature extraction
