@@ -1,0 +1,240 @@
+name: Build Multi-Platform Executables
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'requirements.txt'
+      - '.github/workflows/main.yml'
+      - 'src/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-linux:
+    name: Build for Linux
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python 3.8
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.8'
+        cache: 'pip'
+
+    - name: Create evaluate.py from Secret
+      env:
+        EVALUATE_CODE: ${{ secrets.EVALUATE_PY_CODE }}
+      run: |
+        echo "$EVALUATE_CODE" > evaluate.py
+        if [ ! -s evaluate.py ]; then
+          echo "[ERROR] evaluate.py is empty! Check EVALUATE_PY_CODE Secret"
+          exit 1
+        fi
+      shell: bash
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyinstaller==5.13.2
+        pip install -r requirements.txt
+      shell: bash
+
+    - name: Build with PyInstaller (Linux)
+      run: |
+        pyinstaller --onefile \
+                    --name evaluate-linux \
+                    --hidden-import pandas \
+                    --hidden-import numpy \
+                    --hidden-import requests \
+                    --hidden-import xgboost \
+                    --hidden-import sklearn \
+                    --hidden-import gym \
+                    --hidden-import stable_baselines3 \
+                    --hidden-import shap \
+                    --exclude-module solution \
+                    evaluate.py
+      shell: bash
+
+    - name: Cleanup temporary files
+      if: always()
+      run: |
+        rm -f evaluate.py || true
+        rm -rf build || true
+        rm -f evaluate-linux.spec || true
+        rm -f solution.py || true
+      shell: bash
+
+    - name: Upload Linux artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: evaluate-linux
+        path: dist/evaluate-linux
+        retention-days: 7
+
+  build-windows:
+    name: Build for Windows
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python 3.8
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.8'
+        cache: 'pip'
+
+    - name: Create evaluate.py from Secret
+      env:
+        EVALUATE_CODE: ${{ secrets.EVALUATE_PY_CODE }}
+      run: |
+        $env:EVALUATE_CODE | Out-File -FilePath "evaluate.py" -Encoding UTF8
+        if ((Get-Item "evaluate.py").Length -eq 0) {
+          Write-Host "[ERROR] evaluate.py is empty! Check EVALUATE_PY_CODE Secret"
+          exit 1
+        }
+      shell: pwsh
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyinstaller==5.13.2
+        pip install -r requirements.txt
+      shell: bash
+
+    - name: Build with PyInstaller (Windows)
+      run: |
+        pyinstaller --onefile `
+                    --name evaluate-windows `
+                    --hidden-import pandas `
+                    --hidden-import numpy `
+                    --hidden-import requests `
+                    --hidden-import xgboost `
+                    --hidden-import sklearn `
+                    --hidden-import gym `
+                    --hidden-import stable_baselines3 `
+                    --hidden-import shap `
+                    --exclude-module solution `
+                    evaluate.py
+      shell: pwsh
+
+    - name: Cleanup temporary files
+      if: always()
+      run: |
+        Remove-Item -Path "evaluate.py" -Force -ErrorAction SilentlyContinue
+        Remove-Item -Path "build" -Recurse -Force -ErrorAction SilentlyContinue
+        Remove-Item -Path "evaluate-windows.spec" -Force -ErrorAction SilentlyContinue
+        Remove-Item -Path "solution.py" -Force -ErrorAction SilentlyContinue
+      shell: pwsh
+
+    - name: Upload Windows artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: evaluate-windows
+        path: dist/evaluate-windows.exe
+        retention-days: 7
+
+  build-macos:
+    name: Build for macOS
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python 3.8
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.8'
+        cache: 'pip'
+
+    - name: Create evaluate.py from Secret
+      env:
+        EVALUATE_CODE: ${{ secrets.EVALUATE_PY_CODE }}
+      run: |
+        echo "$EVALUATE_CODE" > evaluate.py
+        if [ ! -s evaluate.py ]; then
+          echo "[ERROR] evaluate.py is empty! Check EVALUATE_PY_CODE Secret"
+          exit 1
+        fi
+      shell: bash
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyinstaller==5.13.2
+        pip install -r requirements.txt
+      shell: bash
+
+    - name: Build with PyInstaller (macOS)
+      run: |
+        pyinstaller --onefile \
+                    --name evaluate-macos \
+                    --hidden-import pandas \
+                    --hidden-import numpy \
+                    --hidden-import requests \
+                    --hidden-import xgboost \
+                    --hidden-import sklearn \
+                    --hidden-import gym \
+                    --hidden-import stable_baselines3 \
+                    --hidden-import shap \
+                    --exclude-module solution \
+                    evaluate.py
+      shell: bash
+
+    - name: Cleanup temporary files
+      if: always()
+      run: |
+        rm -f evaluate.py || true
+        rm -rf build || true
+        rm -f evaluate-macos.spec || true
+        rm -f solution.py || true
+      shell: bash
+
+    - name: Upload macOS artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: evaluate-macos
+        path: dist/evaluate-macos
+        retention-days: 7
+
+  release:
+    needs: [build-linux, build-windows, build-macos]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+
+    - name: List downloaded artifacts
+      run: |
+        echo "Downloaded artifacts:"
+        find artifacts -type f
+      shell: bash
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v${{ github.run_number }}
+        name: Release v${{ github.run_number }}
+        draft: false
+        prerelease: false
+        files: |
+          artifacts/evaluate-linux/evaluate-linux
+          artifacts/evaluate-windows/evaluate-windows.exe
+          artifacts/evaluate-macos/evaluate-macos
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
