@@ -14,7 +14,7 @@ class MyAgent(ModelProvider):
     def __init__(self, api_key: str, base_url: str):
         super().__init__(api_key, base_url)
         # Allow model name to be configured via environment variable or default to deepseek-chat if base_url implies it
-        self.model_name = os.getenv("MODEL_NAME", "ecnu-max")
+        self.model_name = os.getenv("MODEL_NAME")
         
         # We will create the client in evaluate_model to avoid event loop issues on Windows
         # self.client = AsyncOpenAI(api_key=api_key, base_url=base_url)
@@ -172,7 +172,7 @@ class MyAgent(ModelProvider):
             # Feeding 100k tokens was the error. Feeding Top 5 (10k tokens) is the fix.
             
             # Let's select Top 5 for the final context
-            final_selected_chunks = sorted_chunks[:5]
+            final_selected_chunks = sorted_chunks[:8]
             
             # Map for neighbor lookup (Context Expansion)
             chunk_map = {(c['file_idx'], c['chunk_idx']): c for c in all_chunks}
@@ -222,7 +222,7 @@ class MyAgent(ModelProvider):
                     model=self.model_name,
                     messages=messages,
                     temperature=0.1,
-                    max_tokens=500
+                    max_tokens=5000
                 )
                 return response.choices[0].message.content
             except Exception as e:

@@ -191,10 +191,10 @@ def main():
     
     test_cases = filtered_test_cases
 
-    print("\n" + "=" * 80)
-    print(f"Loaded {len(test_cases)} test case(s) from {args.test_case_json}")
-    print(f"Evaluator Type: {args.evaluator_type}")
-    print("=" * 80)
+    # print("\n" + "=" * 80)
+    # print(f"Loaded {len(test_cases)} test case(s) from {args.test_case_json}")
+    # print(f"Evaluator Type: {args.evaluator_type}")
+    # print("=" * 80)
 
     # Run all test cases
     all_results = []

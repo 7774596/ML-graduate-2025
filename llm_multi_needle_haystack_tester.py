@@ -91,10 +91,10 @@ class LLMMultiNeedleHaystackTester:
                     'token_count': len(tokens)
                 })
 
-        if self.print_ongoing_status:
-            print(f"Loaded {len(files)} text files from {self.haystack_dir}")
-            for f in files:
-                print(f"  - {f['filename']}: {f['token_count']} tokens")
+        # if self.print_ongoing_status:
+        #     print(f"Loaded {len(files)} text files from {self.haystack_dir}")
+        #     for f in files:
+        #         print(f"  - {f['filename']}: {f['token_count']} tokens")
 
         return files
 
