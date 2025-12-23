@@ -1,0 +1,21 @@
+{
+  "test_number": 1,
+  "model": "deepseek-chat",
+  "version": 1,
+  "needles": [
+    "The interstellar probe 'Aethel-7R' is humanity's most ambitious deep space mission. Its launch is scheduled for 2057-1-7, with the primary objective of reaching the Oort Cloud. The probe's unique identification signature is broadcast as 'Project Chimera-77'."
+  ],
+  "needle_locations": [
+    {
+      "needle": "The interstellar probe 'Aethel-7R' is humanity's most ambitious deep space mission. Its launch is scheduled for 2057-1-7, with the primary objective of reaching the Oort Cloud. The probe's unique identification signature is broadcast as 'Project Chimera-77'.",
+      "filename": "avg.txt",
+      "depth_percent": 73.64473235594954
+    }
+  ],
+  "total_files": 49,
+  "files_with_needles": 49,
+  "model_response": "The launch date is given as 2057-1-7 (January 7, 2057). The mid-course correction is scheduled for March 15, 2057.\n\nCalculating the number of days between these dates:\n\n- January has 31 days. From January 7 to January 31 inclusive is 25 days (but we count from launch day, so days after launch: January 8\u201331 = 24 days, plus launch day itself? Actually, we want elapsed days between launch and the maneuver. Typically, we count the days after launch up to the maneuver day, not including both start and end? Let's clarify: if launch is day 0, then March 15 is day X. Let's compute properly.)\n\nBetter to compute the difference:\n\nFrom January 7 to March 15 in a non-leap year (2057 is not a leap year because 2057 is not divisible by 4):\n\n- January: 31 days total. Days from January 7 to January 31: 31 - 7 = 24 days (but that's days after January 7, not including January 7). So from January 8 to January 31 = 24 days.\n- February: 28 days.\n- March: up to March 15 = 15 days.\n\nTotal days after launch: 24 (Jan) + 28 (Feb) + 15 (Mar) = 67 days.\n\nAlternatively, if we consider launch day as day 0, then March 15 is 67 days later. So the number of days elapsed between launch and the maneuver is 67 days.\n\nAnswer: 67 days.",
+  "score": 0,
+  "test_duration_seconds": 14.21160364151001,
+  "test_timestamp_utc": "2025-12-23 05:02:45+0000"
+}

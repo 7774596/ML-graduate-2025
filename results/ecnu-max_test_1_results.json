@@ -1,0 +1,27 @@
+{
+  "test_number": 1,
+  "model": "ecnu-max",
+  "version": 1,
+  "needles": [
+    "Project Hyperion: Mainframe Core Identification: Zeta-9, Quantum Flux Reading: 1254007335985156 (raw data).",
+    "Project Hyperion: Security Clearance Note: The root decryption key for the mainframe Zeta-9 is derived from the integer square root of the flux reading. Do not perform the calculation here."
+  ],
+  "needle_locations": [
+    {
+      "needle": "Project Hyperion: Security Clearance Note: The root decryption key for the mainframe Zeta-9 is derived from the integer square root of the flux reading. Do not perform the calculation here.",
+      "filename": "iflisp.txt",
+      "depth_percent": 40.70175438596491
+    },
+    {
+      "needle": "Project Hyperion: Mainframe Core Identification: Zeta-9, Quantum Flux Reading: 1254007335985156 (raw data).",
+      "filename": "sun.txt",
+      "depth_percent": 8.934707903780069
+    }
+  ],
+  "total_files": 49,
+  "files_with_needles": 49,
+  "model_response": "1254007335985156",
+  "score": 0,
+  "test_duration_seconds": 2.426281452178955,
+  "test_timestamp_utc": "2025-12-23 07:43:55+0000"
+}
